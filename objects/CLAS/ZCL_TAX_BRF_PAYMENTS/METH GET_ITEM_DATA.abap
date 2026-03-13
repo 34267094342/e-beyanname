@@ -293,13 +293,24 @@
       READ TABLE lt_reversing TRANSPORTING NO FIELDS WITH KEY awref = ls_reversed-awref_rev
                                                               aworg = ls_reversed-aworg_rev
                                                               BINARY SEARCH.
-      CHECK sy-subrc IS INITIAL.
+      " CHECK sy-subrc IS INITIAL.
+      IF sy-subrc IS INITIAL.
+        DELETE et_data WHERE awref_rev EQ ls_reversed-awref_rev
+                         AND aworg_rev EQ ls_reversed-aworg_rev.
 
-      DELETE et_data WHERE awref_rev EQ ls_reversed-awref_rev
-                       AND aworg_rev EQ ls_reversed-aworg_rev.
+        DELETE et_data WHERE awref EQ ls_reversed-awref_rev
+                         AND aworg EQ ls_reversed-aworg_rev.
 
-      DELETE et_data WHERE awref EQ ls_reversed-awref_rev
-                       AND aworg EQ ls_reversed-aworg_rev.
+
+      ELSE.
+        " XREVERSED = X ise doğrudan BELNR ile sil
+        IF ls_reversed-xreversed EQ abap_true.
+          DELETE et_data WHERE bukrs EQ ls_reversed-bukrs
+                           AND belnr EQ ls_reversed-belnr
+                           AND gjahr EQ ls_reversed-gjahr.
+        ENDIF.
+      ENDIF.
+
 
     ENDLOOP.
 
