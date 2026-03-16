@@ -502,7 +502,7 @@
           IF sy-subrc EQ 0.
             ls_collect-kiril1 = ls_map-kiril1.
             ls_collect-acklm1 = ls_map-acklm1.
-            ls_collect-vergi  = ls_bset-hwbas.
+            ls_collect-vergi  = ls_indirim-hwste.   "ls_bset-hwbas.
             COLLECT ls_collect INTO mt_collect.
 
             ls_collect-kiril2 = ls_map-kiril2.
