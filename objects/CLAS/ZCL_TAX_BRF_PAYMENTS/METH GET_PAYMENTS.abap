@@ -27,6 +27,8 @@
              lifnr TYPE string,            " Business Partner Number
              name1 TYPE string,            " Name 1
              name2 TYPE string,            " Name 2
+             org1  TYPE string,   " OrganizationBPName1  ← YENİ
+             org2  TYPE string,   " OrganizationBPName2  ← YENİ
              stras TYPE string,            " Street
              regio TYPE string,            " Region
              mcod3 TYPE string,            " Additional Code
@@ -215,12 +217,14 @@
                                              AND ( name1 IS NOT INITIAL OR name_org1 IS NOT INITIAL ).
 *              MOVE-CORRESPONDING ls_lifnr TO ls_data.
               ls_data-lifnr = ls_lifnr-lifnr.
-              IF ls_lifnr-name1 IS NOT INITIAL.
-                ls_data-name1 = ls_lifnr-name1.      " ← önce name1
-                ls_data-name2 = ls_lifnr-name2.
-                elseif ls_lifnr-name_org1 is not initial.
-                ls_data-name1 = ls_lifnr-name_org1.  " ← fallback org1
-                ls_data-name2 = ls_lifnr-name_org2.
+              " Önce FirstName/LastName'e bak
+              " Boşsa OrganizationBPName1/2'ye bak
+              IF ls_lfa1-name1 IS NOT INITIAL.
+                ls_ode-name1 = ls_lfa1-name1.   " ← FirstName → soyadı kolonu
+                ls_ode-name2 = ls_lfa1-name2.   " ← LastName  → adı kolonu
+              ELSEIF ls_lfa1-org1 IS NOT INITIAL.
+                ls_ode-name1 = ls_lfa1-org1.    " ← OrganizationBPName1 → soyadı
+                ls_ode-name2 = ls_lfa1-org2.    " ← OrganizationBPName2 → adı
               ENDIF.
               ls_data-stras = ls_lifnr-stras.
 *              ls_data-mcod3 = ls_lifnr-mcod3.
@@ -422,8 +426,10 @@
 
     IF lines( lt_mmt_lifnr ) GT 0.
       SELECT supplier AS lifnr,
-             but000~OrganizationBPName1 AS name1,  " ← org adı (ad)
-             but000~OrganizationBPName2 AS name2,  " ← org adı2 (soyad)
+             but000~FirstName              AS name1,  " ← gerçek isim
+             but000~LastName               AS name2,  " ← gerçek soyad
+             but000~OrganizationBPName1    AS org1,   " ← org adı  ← YENİ
+             but000~OrganizationBPName2    AS org2,   " ← org soyad ← YENİ
              StreetName AS stras,
              Region AS regio,
 *             mcod3
