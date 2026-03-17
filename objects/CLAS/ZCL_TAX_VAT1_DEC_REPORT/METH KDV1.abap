@@ -206,20 +206,37 @@
       AND map~kiril1 = '30'
     INTO TABLE @DATA(lt_creditcart_rev)  .
 
+*    SELECT
+*    j~glaccount AS hkont,
+*    SUM(   j~amountincompanycodecurrency   ) AS hwste
+*      FROM i_journalentryitem AS j
+*      INNER JOIN @lt_map AS map
+*      ON map~saknr = j~glaccount
+*      AND map~kural = '004'
+*    WHERE j~ledger = '0L'
+*       AND j~companycode = @p_bukrs
+*       AND j~fiscalyear = @p_gjahr
+*       AND j~fiscalperiod = @p_monat
+*       AND j~isreversal = ''
+*       AND j~isreversed = ''
+*       GROUP BY  j~glaccount
+*    INTO TABLE @DATA(lt_indirim).
+
     SELECT
-    j~glaccount AS hkont,
-    SUM(   j~amountincompanycodecurrency   ) AS hwste
-      FROM i_journalentryitem AS j
-      INNER JOIN @lt_map AS map
+      j~glaccount AS hkont,
+      SUM( j~amountincompanycodecurrency ) AS hwste
+    FROM i_journalentryitem AS j
+    INNER JOIN @lt_map AS map
       ON map~saknr = j~glaccount
       AND map~kural = '004'
-    WHERE j~ledger = '0L'
-       AND j~companycode = @p_bukrs
-       AND j~fiscalyear = @p_gjahr
-       AND j~fiscalperiod = @p_monat
-       AND j~isreversal = ''
-       AND j~isreversed = ''
-       GROUP BY  j~glaccount
+    WHERE j~ledger               = '0L'
+      AND j~companycode          = @p_bukrs
+      AND j~fiscalyear           = @p_gjahr
+      AND j~fiscalperiod         = @p_monat
+      AND j~isreversal           = ''
+      AND j~isreversed           = ''
+      AND j~accountingdocumenttype = 'AK'    " ← EKLENEN SATIR: Sadece Açılış Kaydı
+    GROUP BY j~glaccount
     INTO TABLE @DATA(lt_indirim).
 
     SELECT

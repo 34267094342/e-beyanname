@@ -215,8 +215,13 @@
                                              AND ( name1 IS NOT INITIAL OR name_org1 IS NOT INITIAL ).
 *              MOVE-CORRESPONDING ls_lifnr TO ls_data.
               ls_data-lifnr = ls_lifnr-lifnr.
-              ls_data-name1 = ls_lifnr-name1.
-              ls_data-name2 = ls_lifnr-name2.
+              IF ls_lifnr-name1 IS NOT INITIAL.
+                ls_data-name1 = ls_lifnr-name1.      " ← önce name1
+                ls_data-name2 = ls_lifnr-name2.
+                elseif ls_lifnr-name_org1 is not initial.
+                ls_data-name1 = ls_lifnr-name_org1.  " ← fallback org1
+                ls_data-name2 = ls_lifnr-name_org2.
+              ENDIF.
               ls_data-stras = ls_lifnr-stras.
 *              ls_data-mcod3 = ls_lifnr-mcod3.
               ls_data-land1 = ls_lifnr-land1.
@@ -307,12 +312,13 @@
                                            BINARY SEARCH.
 
       ls_ode-lifnr  = ls_lifnr-lifnr.
+      " DÜZELTİLMİŞ (name1/2 önce, org fallback):
       IF ls_lifnr-name1 IS NOT INITIAL.
-        ls_ode-name2  = ls_lifnr-name2.
-        ls_ode-name1  = ls_lifnr-name1.
-      ELSE.
-        ls_ode-name2  = ls_lifnr-name_org2.
-        ls_ode-name1  = ls_lifnr-name_org1.
+        ls_ode-name2 = ls_lifnr-name2.      " ← ad
+        ls_ode-name1 = ls_lifnr-name1.      " ← soyad
+      ELSEIF ls_lifnr-name_org1 IS NOT INITIAL.
+        ls_ode-name2 = ls_lifnr-name_org1.  " ← fallback: org1 = ad
+        ls_ode-name1 = ls_lifnr-name_org2.  " ← fallback: org2 = soyad
       ENDIF.
 
 
@@ -416,8 +422,8 @@
 
     IF lines( lt_mmt_lifnr ) GT 0.
       SELECT supplier AS lifnr,
-             but000~FirstName AS name1,
-             but000~lastName  AS name2,
+             but000~OrganizationBPName1 AS name1,  " ← org adı (ad)
+             but000~OrganizationBPName2 AS name2,  " ← org adı2 (soyad)
              StreetName AS stras,
              Region AS regio,
 *             mcod3
