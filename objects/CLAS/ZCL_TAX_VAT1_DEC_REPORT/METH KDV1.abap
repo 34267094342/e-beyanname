@@ -222,6 +222,20 @@
 *       GROUP BY  j~glaccount
 *    INTO TABLE @DATA(lt_indirim).
 
+    " DOĞRU YAKLAŞIM — Her ay çalışır:
+    " Önceki ayın bakiyesini hesaplayarak getir
+
+    DATA lv_prev_gjahr TYPE gjahr.
+    DATA lv_prev_monat TYPE monat.
+
+    IF p_monat = '001'.
+      lv_prev_gjahr = p_gjahr - 1.
+      lv_prev_monat = '012'.
+    ELSE.
+      lv_prev_gjahr = p_gjahr.
+      lv_prev_monat = p_monat - 1.
+    ENDIF.
+
     SELECT
       j~glaccount AS hkont,
       SUM( j~amountincompanycodecurrency ) AS hwste
@@ -229,13 +243,12 @@
     INNER JOIN @lt_map AS map
       ON map~saknr = j~glaccount
       AND map~kural = '004'
-    WHERE j~ledger               = '0L'
-      AND j~companycode          = @p_bukrs
-      AND j~fiscalyear           = @p_gjahr
-      AND j~fiscalperiod         = @p_monat
-      AND j~isreversal           = ''
-      AND j~isreversed           = ''
-      AND j~accountingdocumenttype = 'AK'    " ← EKLENEN SATIR: Sadece Açılış Kaydı
+    WHERE j~ledger        = '0L'
+      AND j~companycode   = @p_bukrs
+      AND j~fiscalyear    = @lv_prev_gjahr  " ← önceki yıl
+      AND j~fiscalperiod  = @lv_prev_monat  " ← önceki ay
+      AND j~isreversal    = ''
+      AND j~isreversed    = ''
     GROUP BY j~glaccount
     INTO TABLE @DATA(lt_indirim).
 
