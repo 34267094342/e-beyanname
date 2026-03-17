@@ -236,8 +236,14 @@
             ENDLOOP.
           ENDIF.
           ls_lifnr-lifnr = ls_data-lifnr.
-          ls_lifnr-name1 = ls_data-name1.
-          ls_lifnr-name2 = ls_data-name2.
+
+          IF ls_data-name1 IS NOT INITIAL.
+            ls_lifnr-name1 = ls_data-name1.
+            ls_lifnr-name2 = ls_data-name2.
+          ELSEIF ls_data-name_org1 IS NOT INITIAL.
+            ls_lifnr-name1 = ls_data-name_org1.
+            ls_lifnr-name2 = ls_data-name_org2.
+          ENDIF.
           ls_lifnr-stras = ls_data-stras.
 *          ls_lifnr-mcod3 = ls_data-mcod3.
           ls_lifnr-land1 = ls_data-land1.
