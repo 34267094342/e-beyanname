@@ -289,7 +289,7 @@
 
     SELECT
     j~taxcode AS mwskz , r~conditionrateratio AS kbetr ,r~vatconditiontype AS kschl,j~accountingdocumenttype AS blart, j~glaccount AS hkont,
-      SUM( CASE WHEN j~transactiontypedetermination IN ('ZTA', 'VST', 'MWS')
+     SUM( CASE WHEN j~transactiontypedetermination = 'ZTA'
        THEN j~amountincompanycodecurrency ELSE 0 END ) AS hwste
       FROM i_journalentryitem AS j
       LEFT OUTER JOIN i_taxcoderate AS r
