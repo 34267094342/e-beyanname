@@ -347,7 +347,9 @@
 
           lr_ktosl = VALUE #( sign = 'I' option = 'EQ' ( low =  'MWS' )
                                                        ( low =  'VST' ) ).
-          IF ls_map-saknr IS NOT INITIAL.
+*          IF ls_map-saknr IS NOT INITIAL.eski
+          " kiril1=109: T1/T2/T6 vergi tutarı ZTA tipinde → lt_bset yerine lt_109 kullanılır.
+          IF ls_map-saknr IS NOT INITIAL AND ls_map-kiril1 <> '109'.
             LOOP AT lt_bset INTO ls_bset WHERE mwskz EQ ls_map-mwskz.
 *                                           AND hkont EQ ls_map-saknr
 *                                           AND ktosl IN lr_ktosl.
