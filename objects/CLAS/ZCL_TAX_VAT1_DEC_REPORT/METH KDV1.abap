@@ -287,12 +287,38 @@
 
 
 
+*    SELECT
+*    j~taxcode AS mwskz , r~conditionrateratio AS kbetr ,r~vatconditiontype AS kschl,j~accountingdocumenttype AS blart, j~glaccount AS hkont,
+*     SUM( CASE WHEN j~transactiontypedetermination = 'ZTA'
+*       THEN j~amountincompanycodecurrency ELSE 0 END ) AS hwste
+*      FROM i_journalentryitem AS j
+*      LEFT OUTER JOIN i_taxcoderate AS r
+*      ON r~cndnrecordvaliditystartdate <= j~documentdate
+*      AND r~cndnrecordvalidityenddate >= j~documentdate
+*      AND r~taxcode = j~taxcode
+*      AND ( r~accountkeyforglaccount = 'VST' OR r~accountkeyforglaccount = 'MWS' )
+*    WHERE j~ledger = '0L'
+*       AND j~companycode = @p_bukrs
+*       AND j~fiscalyear = @p_gjahr
+*       AND j~fiscalperiod = @p_monat
+*       AND j~isreversal = ''
+*       AND j~isreversed = ''
+*      AND ( j~financialaccounttype = 'S' OR j~financialaccounttype = 'A' )
+*       AND j~taxcode <> ''
+*       GROUP BY j~taxcode, r~conditionrateratio,r~vatconditiontype, j~accountingdocumenttype,j~glaccount
+*    ORDER BY j~taxcode
+*    INTO TABLE @DATA(lt_109) .
+
+
+    " YENİ (DOĞRU) SELECT — sadece mwskz + kbetr bazında topla:
     SELECT
-    j~taxcode AS mwskz , r~conditionrateratio AS kbetr ,r~vatconditiontype AS kschl,j~accountingdocumenttype AS blart, j~glaccount AS hkont,
-     SUM( CASE WHEN j~transactiontypedetermination = 'ZTA'
-       THEN j~amountincompanycodecurrency ELSE 0 END ) AS hwste
-      FROM i_journalentryitem AS j
-      LEFT OUTER JOIN i_taxcoderate AS r
+      j~taxcode AS mwskz,
+      r~conditionrateratio AS kbetr,
+      r~vatconditiontype AS kschl,
+      SUM( CASE WHEN j~transactiontypedetermination = 'ZTA'
+        THEN j~amountincompanycodecurrency ELSE 0 END ) AS hwste
+    FROM i_journalentryitem AS j
+    LEFT OUTER JOIN i_taxcoderate AS r
       ON r~cndnrecordvaliditystartdate <= j~documentdate
       AND r~cndnrecordvalidityenddate >= j~documentdate
       AND r~taxcode = j~taxcode
@@ -305,9 +331,9 @@
        AND j~isreversed = ''
       AND ( j~financialaccounttype = 'S' OR j~financialaccounttype = 'A' )
        AND j~taxcode <> ''
-       GROUP BY j~taxcode, r~conditionrateratio,r~vatconditiontype, j~accountingdocumenttype,j~glaccount
+    GROUP BY j~taxcode, r~conditionrateratio, r~vatconditiontype
     ORDER BY j~taxcode
-    INTO TABLE @DATA(lt_109) .
+    INTO TABLE @DATA(lt_109).
 
 
     SORT lt_map BY xmlsr ASCENDING kural ASCENDING.
