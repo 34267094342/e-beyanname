@@ -311,30 +311,56 @@
 
 
     " YENİ (DOĞRU) SELECT — sadece mwskz + kbetr bazında topla:
+*    SELECT
+*      j~taxcode AS mwskz,
+*      r~conditionrateratio AS kbetr,
+*      r~vatconditiontype AS kschl,
+*      SUM( CASE WHEN j~transactiontypedetermination = 'ZTA'
+*        THEN j~amountincompanycodecurrency ELSE 0 END ) AS hwste
+*    FROM i_journalentryitem AS j
+*    LEFT OUTER JOIN i_taxcoderate AS r
+*      ON r~cndnrecordvaliditystartdate <= j~documentdate
+*      AND r~cndnrecordvalidityenddate >= j~documentdate
+*      AND r~taxcode = j~taxcode
+*      AND ( r~accountkeyforglaccount = 'VST' OR r~accountkeyforglaccount = 'MWS' )
+*    WHERE j~ledger = '0L'
+*       AND j~companycode = @p_bukrs
+*       AND j~fiscalyear = @p_gjahr
+*       AND j~fiscalperiod = @p_monat
+*       AND j~isreversal = ''
+*       AND j~isreversed = ''
+*      AND ( j~financialaccounttype = 'S' OR j~financialaccounttype = 'A' )
+*       AND j~taxcode <> ''
+*    GROUP BY j~taxcode, r~conditionrateratio, r~vatconditiontype
+*    ORDER BY j~taxcode
+*    INTO TABLE @DATA(lt_109).
+
     SELECT
-      j~taxcode AS mwskz,
+      j~taxcode          AS mwskz,
       r~conditionrateratio AS kbetr,
-      r~vatconditiontype AS kschl,
-      SUM( CASE WHEN j~transactiontypedetermination = 'ZTA'
-        THEN j~amountincompanycodecurrency ELSE 0 END ) AS hwste
+      r~vatconditiontype   AS kschl,
+      SUM( j~amountincompanycodecurrency ) AS hwste
     FROM i_journalentryitem AS j
     LEFT OUTER JOIN i_taxcoderate AS r
-      ON r~cndnrecordvaliditystartdate <= j~documentdate
-      AND r~cndnrecordvalidityenddate >= j~documentdate
-      AND r~taxcode = j~taxcode
-      AND ( r~accountkeyforglaccount = 'VST' OR r~accountkeyforglaccount = 'MWS' )
-    WHERE j~ledger = '0L'
-       AND j~companycode = @p_bukrs
-       AND j~fiscalyear = @p_gjahr
-       AND j~fiscalperiod = @p_monat
-       AND j~isreversal = ''
-       AND j~isreversed = ''
-      AND ( j~financialaccounttype = 'S' OR j~financialaccounttype = 'A' )
-       AND j~taxcode <> ''
+      ON  r~cndnrecordvaliditystartdate <= j~documentdate
+      AND r~cndnrecordvalidityenddate   >= j~documentdate
+      AND r~taxcode                      = j~taxcode
+      AND ( r~accountkeyforglaccount = 'VST'
+         OR r~accountkeyforglaccount = 'MWS' )
+    WHERE j~ledger               = '0L'
+      AND j~companycode          = @p_bukrs
+      AND j~fiscalyear           = @p_gjahr
+      AND j~fiscalperiod         = @p_monat
+      AND j~isreversal           = ''
+      AND j~isreversed           = ''
+      AND ( j~financialaccounttype = 'S'
+         OR j~financialaccounttype = 'A' )
+      AND j~taxcode              <> ''
+      AND j~transactiontypedetermination = 'ZTA'  " ← WHERE'a taşındı
+      AND j~debitcreditcode      = 'H'             " ← YENİ: sadece alacak satırları
     GROUP BY j~taxcode, r~conditionrateratio, r~vatconditiontype
     ORDER BY j~taxcode
     INTO TABLE @DATA(lt_109).
-
 
     SORT lt_map BY xmlsr ASCENDING kural ASCENDING.
 
@@ -347,9 +373,8 @@
 
           lr_ktosl = VALUE #( sign = 'I' option = 'EQ' ( low =  'MWS' )
                                                        ( low =  'VST' ) ).
-*          IF ls_map-saknr IS NOT INITIAL.eski
-          " kiril1=109: T1/T2/T6 vergi tutarı ZTA tipinde → lt_bset yerine lt_109 kullanılır.
-          IF ls_map-saknr IS NOT INITIAL AND ls_map-kiril1 <> '109'.
+          IF ls_map-saknr IS NOT INITIAL.
+
             LOOP AT lt_bset INTO ls_bset WHERE mwskz EQ ls_map-mwskz.
 *                                           AND hkont EQ ls_map-saknr
 *                                           AND ktosl IN lr_ktosl.
