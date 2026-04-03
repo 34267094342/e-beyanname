@@ -166,8 +166,8 @@
 
       SELECT
       j~taxcode AS mwskz , r~conditionrateratio AS kbetr ,r~vatconditiontype AS kschl,j~accountingdocumenttype AS blart, j~glaccount AS hkont,
-        SUM( CASE WHEN ( j~transactiontypedetermination = 'VST' OR
-                 j~transactiontypedetermination = 'MWS' )  THEN j~amountincompanycodecurrency ELSE 0 END ) AS hwste,
+        SUM( CASE WHEN ( j~transactiontypedetermination = 'VST' OR j~transactiontypedetermination = 'MWS' OR j~transactiontypedetermination = 'ZTA'
+         )  THEN j~amountincompanycodecurrency ELSE 0 END ) AS hwste,
         SUM( CASE WHEN ( j~transactiontypedetermination <> 'VST' AND
                          j~transactiontypedetermination <> 'MWS' AND
                          j~transactiontypedetermination <> 'ZTA' ) THEN j~amountincompanycodecurrency ELSE 0 END ) AS hwbas
