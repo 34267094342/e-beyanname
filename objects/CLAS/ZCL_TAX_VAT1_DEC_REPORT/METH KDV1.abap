@@ -884,9 +884,14 @@
       ENDCASE.
     ENDLOOP.
 
-
-
-
+    "bset de T1-T9 arası olanların vergi tutarını 109 tablosundan alalım, çünkü bset'teki kbetr oranı bazen yanlış geliyor.
+    DATA lr_kiril3 TYPE RANGE OF ztax_e_acklm.
+    lr_kiril3 = VALUE #(
+      sign = 'I' option = 'EQ'
+      ( low = 'T1' ) ( low = 'T2' ) ( low = 'T3' )
+      ( low = 'T4' ) ( low = 'T5' ) ( low = 'T6' )
+      ( low = 'T7' ) ( low = 'T8' ) ( low = 'T9' )
+    ).
 
     LOOP AT mt_collect ASSIGNING <fs_collect>.
 
@@ -894,7 +899,23 @@
       <fs_collect>-vergi    = abs( <fs_collect>-vergi ).
       <fs_collect>-tevkifat = abs( <fs_collect>-tevkifat ).
 
+      IF <fs_collect>-kiril2 = '109'
+        AND <fs_collect>-kiril3 IN lr_kiril3.
+
+        READ TABLE lt_109 INTO DATA(ls_109_temp)
+          WITH KEY mwskz = <fs_collect>-kiril3.  " <-- kiril3 = mwskz kodu
+        IF sy-subrc EQ 0.
+          <fs_collect>-vergi = abs( ls_109_temp-hwste ).
+        ENDIF.
+
+      ENDIF.
+
     ENDLOOP.
+
+
+
+
+
 
 
     " manuel olanları toplayalım .
