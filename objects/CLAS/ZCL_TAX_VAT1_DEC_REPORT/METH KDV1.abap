@@ -547,11 +547,13 @@
                 "Hesapçıoğlu için hariç tutuldu.
 
 
-                " DOĞRU DÜZELTME — sadece HWBAS sıfırla, HWSTE'ye DOKUNMA:
+                " DOĞRU DÜZELTME:
+                " 391 hesabında HWBAS varsa → bu bir KDV düzeltmesi
+                " HWBAS değerini HWSTE'ye taşı, matrahı sıfırla
                 IF ls_bset-hkont(3) = '391' AND ls_bset-hwbas <> 0.
-                  CLEAR ls_bset-hwbas.   " sadece bu!
+                  ls_bset-hwste = ls_bset-hwbas.  " pozitif kalmalı → abs() ile düşülecek
+                  CLEAR ls_bset-hwbas.
                 ENDIF.
-
 *              "1
                 CLEAR ls_collect.
                 ls_collect-kiril1 = ls_map-kiril1.
