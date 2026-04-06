@@ -547,11 +547,9 @@
                 "Hesapçıoğlu için hariç tutuldu.
 
 
-                " YENİ DÜZELTME:
+                " DOĞRU DÜZELTME — sadece HWBAS sıfırla, HWSTE'ye DOKUNMA:
                 IF ls_bset-hkont(3) = '391' AND ls_bset-hwbas <> 0.
-                  " HWBAS → matrah değil, HWSTE → vergi gibi davranıyor
-                  ls_bset-hwste = ls_bset-hwbas * -1.  " iadenin vergiye etkisi
-                  CLEAR ls_bset-hwbas.                 " matrahı sıfırla
+                  CLEAR ls_bset-hwbas.   " sadece bu!
                 ENDIF.
 
 *              "1
