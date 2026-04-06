@@ -546,7 +546,13 @@
                 ENDIF.
                 "Hesapçıoğlu için hariç tutuldu.
 
-*
+
+                " YENİ EKLEME — 391 hesabında HWBAS varsa sadece onu sıfırla:
+                IF ls_bset-hkont(3) = '391' AND ls_bset-hwbas <> 0.
+                  CLEAR ls_bset-hwbas.  " HWSTE korunur, sadece yanlış HWBAS sıfırlanır
+                ENDIF.
+
+
 *              "1
                 CLEAR ls_collect.
                 ls_collect-kiril1 = ls_map-kiril1.
