@@ -547,11 +547,12 @@
                 "Hesapçıoğlu için hariç tutuldu.
 
 
-                " YENİ EKLEME — 391 hesabında HWBAS varsa sadece onu sıfırla:
+                " YENİ DÜZELTME:
                 IF ls_bset-hkont(3) = '391' AND ls_bset-hwbas <> 0.
-                  CLEAR ls_bset-hwbas.  " HWSTE korunur, sadece yanlış HWBAS sıfırlanır
+                  " HWBAS → matrah değil, HWSTE → vergi gibi davranıyor
+                  ls_bset-hwste = ls_bset-hwbas * -1.  " iadenin vergiye etkisi
+                  CLEAR ls_bset-hwbas.                 " matrahı sıfırla
                 ENDIF.
-
 
 *              "1
                 CLEAR ls_collect.
