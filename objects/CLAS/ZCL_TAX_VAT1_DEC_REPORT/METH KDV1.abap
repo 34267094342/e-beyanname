@@ -225,32 +225,56 @@
     " DOĞRU YAKLAŞIM — Her ay çalışır:
     " Önceki ayın bakiyesini hesaplayarak getir
 
-    DATA lv_prev_gjahr TYPE gjahr.
-    DATA lv_prev_monat TYPE monat.
+*    DATA lv_prev_gjahr TYPE gjahr.
+*    DATA lv_prev_monat TYPE monat.
+*
+*    IF p_monat = '001'.
+*      lv_prev_gjahr = p_gjahr - 1.
+*      lv_prev_monat = '012'.
+*    ELSE.
+*      lv_prev_gjahr = p_gjahr.
+*      lv_prev_monat = p_monat - 1.
+*    ENDIF.
+*
+*    SELECT
+*      j~glaccount AS hkont,
+*      SUM( j~amountincompanycodecurrency ) AS hwste
+*    FROM i_journalentryitem AS j
+*    INNER JOIN @lt_map AS map
+*      ON map~saknr = j~glaccount
+*      AND map~kural = '004'
+*    WHERE j~ledger        = '0L'
+*      AND j~companycode   = @p_bukrs
+*      AND j~fiscalyear    = @lv_prev_gjahr  " ← önceki yıl
+*      AND j~fiscalperiod  = @lv_prev_monat  " ← önceki ay
+*      AND j~isreversal    = ''
+*      AND j~isreversed    = ''
+*    GROUP BY j~glaccount
+*    INTO TABLE @DATA(lt_indirim).
 
-    IF p_monat = '001'.
-      lv_prev_gjahr = p_gjahr - 1.
-      lv_prev_monat = '012'.
-    ELSE.
-      lv_prev_gjahr = p_gjahr.
-      lv_prev_monat = p_monat - 1.
-    ENDIF.
+    " KURAL 004 — Önceki Dönemden Devreden İndirilecek KDV
+    " Cari ayın başlangıcına kadar olan TÜM dönemlerin kümülatif bakiyesi alınır.
+    " Yani: (tüm önceki yıllar) + (aynı yılın, cari aydan önceki ayları)
 
     SELECT
       j~glaccount AS hkont,
       SUM( j~amountincompanycodecurrency ) AS hwste
     FROM i_journalentryitem AS j
     INNER JOIN @lt_map AS map
-      ON map~saknr = j~glaccount
+      ON map~saknr  = j~glaccount
       AND map~kural = '004'
-    WHERE j~ledger        = '0L'
-      AND j~companycode   = @p_bukrs
-      AND j~fiscalyear    = @lv_prev_gjahr  " ← önceki yıl
-      AND j~fiscalperiod  = @lv_prev_monat  " ← önceki ay
-      AND j~isreversal    = ''
-      AND j~isreversed    = ''
+    WHERE j~ledger      = '0L'
+      AND j~companycode = @p_bukrs
+      AND j~isreversal  = ''
+      AND j~isreversed  = ''
+      AND (   j~fiscalyear < @p_gjahr                          " tüm önceki yıllar
+          OR ( j~fiscalyear  = @p_gjahr                        " aynı yıl,
+               AND j~fiscalperiod < @p_monat ) )               " cari aydan önceki aylar
     GROUP BY j~glaccount
     INTO TABLE @DATA(lt_indirim).
+
+
+
 
     SELECT
     j~glaccount AS hkont,
