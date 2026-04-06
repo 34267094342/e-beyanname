@@ -906,6 +906,7 @@
           WITH KEY mwskz = <fs_collect>-kiril3.  " <-- kiril3 = mwskz kodu
         IF sy-subrc EQ 0.
           <fs_collect>-vergi = abs( ls_109_temp-hwste ).
+          <fs_collect>-matrah = <fs_collect>-matrah - <fs_collect>-vergi.
         ENDIF.
 
       ENDIF.
