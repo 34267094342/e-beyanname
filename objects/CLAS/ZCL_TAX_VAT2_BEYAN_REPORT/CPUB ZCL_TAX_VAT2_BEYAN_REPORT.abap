@@ -140,6 +140,7 @@ CLASS zcl_tax_vat2_beyan_report DEFINITION
     TYPES buzid TYPE c LENGTH 1.
     TYPES mwskz TYPE mwskz.
     TYPES xref3 TYPE  c LENGTH 20.
+    TYPES assignmentreference TYPE I_JournalEntryItem-assignmentreference.
     TYPES END OF mty_bseg.
     TYPES mtty_bseg TYPE TABLE OF mty_bseg .
 
