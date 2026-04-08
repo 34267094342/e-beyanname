@@ -213,21 +213,21 @@
 *                 AND bseg~belnr EQ et_bset-belnr
 *                 AND bseg~gjahr EQ et_bset-gjahr.
 
-*        SELECT companycode AS bukrs,
-*                    accountingdocument AS belnr,
-*                    fiscalyear AS gjahr ,
-*                    financialaccounttype AS koart ,
-*                    supplier AS lifnr ,
-*                    accountingdocumentitemtype AS buzid,
-*                    taxcode AS mwskz,
-*               reference3idbybusinesspartner AS xref3
-*
-*                    FROM i_operationalacctgdocitem AS bseg
-*                    INNER JOIN @et_bset AS bset
-*                    ON bseg~companycode EQ bset~bukrs
-*                      AND bseg~accountingdocument EQ bset~belnr
-*                      AND bseg~fiscalyear EQ bset~gjahr
-*                       INTO TABLE @et_bseg.
+        SELECT companycode AS bukrs,
+                    accountingdocument AS belnr,
+                    fiscalyear AS gjahr ,
+                    financialaccounttype AS koart ,
+                    supplier AS lifnr ,
+                    accountingdocumentitemtype AS buzid,
+                    taxcode AS mwskz,
+               reference3idbybusinesspartner AS xref3
+
+                    FROM i_operationalacctgdocitem AS bseg
+                    INNER JOIN @et_bset AS bset
+                    ON bseg~companycode EQ bset~bukrs
+                      AND bseg~accountingdocument EQ bset~belnr
+                      AND bseg~fiscalyear EQ bset~gjahr
+                       INTO TABLE @et_bseg.
 
         SELECT bseg~companycode              AS bukrs,
                bseg~accountingdocument       AS belnr,
