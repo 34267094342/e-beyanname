@@ -168,15 +168,6 @@
                                                          belnr = ls_bset-belnr
                                                          gjahr = ls_bset-gjahr.
 
-          CLEAR ls_bseg.
-          READ TABLE lt_bseg INTO ls_bseg WITH KEY bukrs = ls_bset-bukrs
-                                                   belnr = ls_bset-belnr
-                                                   gjahr = ls_bset-gjahr
-                                                   buzid = 'T'
-                                                   mwskz = ls_map-mwskz
-                                                   BINARY SEARCH.
-
-
           READ TABLE lt_parameters TRANSPORTING NO FIELDS
                 WITH KEY kschl = ls_bset-kschl BINARY SEARCH.
           CHECK sy-subrc  IS INITIAL.
@@ -194,12 +185,22 @@
 
           IF lv_ita IS NOT INITIAL .
 
-            ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg TO <fs_value>.
-            IF <fs_value> IS ASSIGNED.
-              IF <fs_value> EQ ls_map-kiril2.
-                COLLECT ls_kschl_mwskz INTO lt_kschl_mwskz.
-                CLEAR ls_kschl_mwskz.
-                UNASSIGN <fs_value>.
+            CLEAR ls_bseg.
+            READ TABLE lt_bseg INTO ls_bseg WITH KEY bukrs = ls_bset-bukrs
+                                                     belnr = ls_bset-belnr
+                                                     gjahr = ls_bset-gjahr
+                                                     buzid = 'T'
+                                                     mwskz = ls_map-mwskz
+                                                     BINARY SEARCH.
+
+            IF sy-subrc IS INITIAL AND lv_ita IS NOT INITIAL.
+              ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg TO <fs_value>.
+              IF <fs_value> IS ASSIGNED.
+                IF <fs_value> EQ ls_map-kiril2.
+                  COLLECT ls_kschl_mwskz INTO lt_kschl_mwskz.
+                  CLEAR ls_kschl_mwskz.
+                  UNASSIGN <fs_value>.
+                ENDIF.
               ENDIF.
             ENDIF.
 
