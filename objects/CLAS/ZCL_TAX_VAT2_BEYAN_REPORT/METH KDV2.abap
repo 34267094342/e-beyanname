@@ -194,6 +194,30 @@
 
           IF lv_ita IS NOT INITIAL .
 
+
+            IF sy-subrc IS INITIAL AND lv_ita IS NOT INITIAL.
+              ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg TO <fs_value>.
+              IF <fs_value> IS ASSIGNED AND <fs_value> IS INITIAL.
+                " İlk bulunan satırda alan boş — aynı anahtar içinde dolu olanı ara
+                DATA(lv_idx) = sy-tabix.
+                LOOP AT lt_bseg INTO ls_bseg FROM lv_idx.
+                  IF ls_bseg-bukrs NE ls_bset-bukrs OR
+                     ls_bseg-belnr NE ls_bset-belnr OR
+                     ls_bseg-gjahr NE ls_bset-gjahr OR
+                     ls_bseg-buzid NE 'T'              OR
+                     ls_bseg-mwskz NE ls_map-mwskz.
+                    EXIT.   " anahtar değişti, daha fazla bakma
+                  ENDIF.
+                  ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg TO <fs_value>.
+                  IF <fs_value> IS NOT INITIAL.
+                    EXIT.   " dolu değer bulundu
+                  ENDIF.
+                ENDLOOP.
+              ENDIF.
+            ENDIF.
+
+
+
             ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg TO <fs_value>.
             IF <fs_value> IS ASSIGNED.
               IF <fs_value> EQ ls_map-kiril2.
