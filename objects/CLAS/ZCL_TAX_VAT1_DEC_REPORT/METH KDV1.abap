@@ -547,13 +547,21 @@
                 "Hesapçıoğlu için hariç tutuldu.
 
 
-                " DOĞRU DÜZELTME:
-                " 391 hesabında HWBAS varsa → bu bir KDV düzeltmesi
-                " HWBAS değerini HWSTE'ye taşı, matrahı sıfırla
+                "-----------------------------------------------------------------------
+                " DÜZELTME: 391... hesabındaki ZA belgesi HWBAS tutarı
+                " SORUN   : SAP'ta ZA (KDV iade/düzeltme) belgelerinde vergi tutarı
+                "           HWSTE yerine HWBAS alanında geldiğinden matrah şişiyor,
+                "           vergi tutarı olması gerekenden fazla hesaplanıyordu.
+                "           (Hatalı: 156.728.536 / Doğru: 133.840.591 TRY)
+                " ÇÖZÜM   : 391... hesabında HWBAS <> 0 ise vergi düzeltmesi olarak
+                "           HWSTE'ye taşı, HWBAS'ı sıfırla.
+                "-----------------------------------------------------------------------
                 IF ls_bset-hkont(3) = '391' AND ls_bset-hwbas <> 0.
                   ls_bset-hwste = ls_bset-hwbas.  " pozitif kalmalı → abs() ile düşülecek
                   CLEAR ls_bset-hwbas.
                 ENDIF.
+
+
 *              "1
                 CLEAR ls_collect.
                 ls_collect-kiril1 = ls_map-kiril1.
@@ -1010,8 +1018,8 @@
       SPLIT ls_map-topal AT '+' INTO TABLE lt_topal.
 
       LOOP AT lt_topal INTO ls_topal.
-        CLEAR lv_kiril2.
-        CLEAR ls_map2.
+*      CLEAR lv_kiril2.     " ESKİ - SPACE yapıyor, eşleşmiyor
+        lv_kiril2 = '000'.    " YENİ - mt_collect'teki başlık satırıyla eşleşir
         SHIFT ls_topal-split LEFT DELETING LEADING space.
         lv_kiril1 = ls_topal-split.
 
