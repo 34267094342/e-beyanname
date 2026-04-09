@@ -954,7 +954,34 @@
 
 
 
+    " *** FIX: KIRIL2='109' başlık satırının (kiril3=space) matrah ve vergisini
+    "          detay satırlarından (kiril3 dolu olanlar) yeniden topla ***
+    DATA lv_109_toplam_matrah TYPE p LENGTH 16 DECIMALS 2.
+    DATA lv_109_toplam_vergi  TYPE p LENGTH 16 DECIMALS 2.
 
+    CLEAR lv_109_toplam_matrah.
+    CLEAR lv_109_toplam_vergi.
+
+    " 1. Detay satırlarını topla (kiril3 dolu olanlar)
+    LOOP AT mt_collect INTO ls_collect
+      WHERE kiril1 = '011'
+        AND kiril2 = '109'
+        AND kiril3 NE space.
+      lv_109_toplam_matrah = lv_109_toplam_matrah + ls_collect-matrah.
+      lv_109_toplam_vergi  = lv_109_toplam_vergi  + ls_collect-vergi.
+    ENDLOOP.
+
+    " 2. Başlık satırını (kiril3=space) güncelle
+    READ TABLE mt_collect ASSIGNING <fs_collect>
+      WITH KEY kiril1 = '011'
+               kiril2 = '109'
+               kiril3 = space.
+    IF <fs_collect> IS ASSIGNED.
+      <fs_collect>-matrah = lv_109_toplam_matrah.
+      <fs_collect>-vergi  = lv_109_toplam_vergi.
+      UNASSIGN <fs_collect>.
+    ENDIF.
+    " *** FIX SON ***
 
 
 
