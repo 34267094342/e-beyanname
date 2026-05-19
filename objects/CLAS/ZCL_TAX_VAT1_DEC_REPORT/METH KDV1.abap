@@ -919,6 +919,54 @@
             CLEAR ls_collect.
           ENDIF.
 
+        WHEN '009'. " Yurtiçi Alım — Ana Hesap Bazlı İndirilecek KDV
+          LOOP AT lt_bset INTO ls_bset WHERE hkont EQ ls_map-saknr.
+            " mwskz filtresi YOK — hangi vergi göstergesiyle girilmiş olursa olsun alınır
+
+            "1 - kiril1 toplamı
+            CLEAR ls_collect.
+            ls_collect-kiril1 = ls_map-kiril1.
+            ls_collect-acklm1 = ls_map-acklm1.
+            ls_collect-matrah = ls_bset-hwbas.
+            ls_collect-vergi  = ls_bset-hwste.
+            COLLECT ls_collect INTO mt_collect.
+            CLEAR ls_collect.
+
+            "2 - kiril2 satırı
+            ls_collect-kiril1 = ls_map-kiril1.
+            ls_collect-acklm1 = ls_map-acklm1.
+            ls_collect-kiril2 = ls_map-kiril2.
+            ls_collect-acklm2 = ls_map-acklm2.
+            ls_collect-matrah = ls_bset-hwbas.
+            ls_collect-vergi  = ls_bset-hwste.
+            COLLECT ls_collect INTO mt_collect.
+            CLEAR ls_collect.
+
+            "3 - kiril3 (mwskz kodu — belgedeki gerçek vergi göstergesi)
+            ls_collect-kiril1 = ls_map-kiril1.
+            ls_collect-acklm1 = ls_map-acklm1.
+            ls_collect-kiril2 = ls_map-kiril2.
+            ls_collect-acklm2 = ls_map-acklm2.
+            ls_collect-kiril3 = ls_bset-mwskz.  " <-- belgeden geliyor, uyarlamadan değil
+            lv_oran_int = abs( ls_bset-kbetr ).
+            ls_collect-oran   = lv_oran_int.
+            SHIFT ls_collect-oran LEFT DELETING LEADING space.
+            ls_collect-matrah = ls_bset-hwbas.
+            ls_collect-vergi  = ls_bset-hwste.
+            COLLECT ls_collect INTO mt_collect.
+            CLEAR ls_collect.
+          ENDLOOP.
+
+          IF sy-subrc IS NOT INITIAL.
+            CLEAR ls_collect.
+            ls_collect-kiril1 = ls_map-kiril1.
+            ls_collect-acklm1 = ls_map-acklm1.
+            COLLECT ls_collect INTO mt_collect.
+            ls_collect-kiril2 = ls_map-kiril2.
+            ls_collect-acklm2 = ls_map-acklm2.
+            COLLECT ls_collect INTO mt_collect.
+            CLEAR ls_collect.
+          ENDIF.
 
       ENDCASE.
     ENDLOOP.
