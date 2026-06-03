@@ -182,8 +182,8 @@
          AND j~companycode = @p_bukrs
          AND j~fiscalyear = @p_gjahr
          AND j~fiscalperiod = @p_monat
-         AND j~isreversal = ''
-         AND j~isreversed = ''
+*         AND j~isreversal = ''
+*         AND j~isreversed = ''
         AND ( j~financialaccounttype = 'S' OR j~financialaccounttype = 'A' )
          AND j~taxcode <> ''
          GROUP BY j~taxcode, r~conditionrateratio,r~vatconditiontype, j~accountingdocumenttype,j~glaccount

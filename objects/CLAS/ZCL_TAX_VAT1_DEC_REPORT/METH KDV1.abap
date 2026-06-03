@@ -947,7 +947,7 @@
             ls_collect-acklm1 = ls_map-acklm1.
             ls_collect-kiril2 = ls_map-kiril2.
             ls_collect-acklm2 = ls_map-acklm2.
-            ls_collect-kiril3 = ls_bset-mwskz.  " <-- belgeden geliyor, uyarlamadan değil
+            ls_collect-kiril3 = ls_bset-hkont.  " <-- ana hesap kodunu kiril3'e attık, çünkü 009 kuralında mwskz'ye göre değil, saknr'ye göre filtreleme yapılıyor
             lv_oran_int = abs( ls_bset-kbetr ).
             ls_collect-oran   = lv_oran_int.
             SHIFT ls_collect-oran LEFT DELETING LEADING space.
