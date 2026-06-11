@@ -919,16 +919,38 @@
             CLEAR ls_collect.
           ENDIF.
 
-        WHEN '009'. " Yurtiçi Alım — Ana Hesap Bazlı İndirilecek KDV
-          LOOP AT lt_bset INTO ls_bset WHERE hkont EQ ls_map-saknr.
-            " mwskz filtresi YOK — hangi vergi göstergesiyle girilmiş olursa olsun alınır
+        WHEN '009'.
+
+          " 009 kuralı: taxcode boş olsa bile saknr bazlı oku
+          DATA lt_bset_009 TYPE mtty_bset.
+          CLEAR lt_bset_009.
+
+          SELECT
+            j~glaccount          AS hkont,
+            j~taxcode            AS mwskz,
+            j~accountingdocumenttype AS blart,
+            SUM( j~amountincompanycodecurrency ) AS hwbas
+          FROM i_journalentryitem AS j
+          WHERE j~ledger        = '0L'
+            AND j~companycode   = @p_bukrs
+            AND j~fiscalyear    = @p_gjahr
+            AND j~fiscalperiod  = @p_monat
+            AND j~isreversal    = ''
+            AND j~isreversed    = ''
+            AND j~glaccount     = @ls_map-saknr    " ← doğrudan hesap filtresi
+            AND ( j~financialaccounttype = 'S'
+               OR j~financialaccounttype = 'A' )
+            " taxcode <> '' ŞARTI YOK — boş taxcode'lu satırlar da gelsin
+          GROUP BY j~glaccount, j~taxcode, j~accountingdocumenttype
+          INTO CORRESPONDING FIELDS OF TABLE @lt_bset_009.
+
+          LOOP AT lt_bset_009 INTO ls_bset.
 
             "1 - kiril1 toplamı
             CLEAR ls_collect.
             ls_collect-kiril1 = ls_map-kiril1.
             ls_collect-acklm1 = ls_map-acklm1.
             ls_collect-matrah = ls_bset-hwbas.
-            ls_collect-vergi  = ls_bset-hwste.
             COLLECT ls_collect INTO mt_collect.
             CLEAR ls_collect.
 
@@ -938,23 +960,19 @@
             ls_collect-kiril2 = ls_map-kiril2.
             ls_collect-acklm2 = ls_map-acklm2.
             ls_collect-matrah = ls_bset-hwbas.
-            ls_collect-vergi  = ls_bset-hwste.
             COLLECT ls_collect INTO mt_collect.
             CLEAR ls_collect.
 
-            "3 - kiril3 (mwskz kodu — belgedeki gerçek vergi göstergesi)
+            "3 - kiril3 (ana hesap kodu)
             ls_collect-kiril1 = ls_map-kiril1.
             ls_collect-acklm1 = ls_map-acklm1.
             ls_collect-kiril2 = ls_map-kiril2.
             ls_collect-acklm2 = ls_map-acklm2.
-            ls_collect-kiril3 = ls_bset-hkont.  " <-- ana hesap kodunu kiril3'e attık, çünkü 009 kuralında mwskz'ye göre değil, saknr'ye göre filtreleme yapılıyor
-            lv_oran_int = abs( ls_bset-kbetr ).
-            ls_collect-oran   = lv_oran_int.
-            SHIFT ls_collect-oran LEFT DELETING LEADING space.
+            ls_collect-kiril3 = ls_bset-hkont.
             ls_collect-matrah = ls_bset-hwbas.
-            ls_collect-vergi  = ls_bset-hwste.
             COLLECT ls_collect INTO mt_collect.
             CLEAR ls_collect.
+
           ENDLOOP.
 
           IF sy-subrc IS NOT INITIAL.
