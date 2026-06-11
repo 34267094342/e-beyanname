@@ -175,6 +175,10 @@
                                                    buzid = 'T'
                                                    mwskz = ls_map-mwskz
                                                    BINARY SEARCH.
+          " sy-tabix / sy-subrc lt_bseg READ'inden HEMEN kaydediliyor;
+          " aşağıdaki lt_parameters READ bunların üzerine yazar.
+          DATA(lv_bseg_tabix) = sy-tabix.
+          DATA(lv_bseg_subrc) = sy-subrc.
 
 
           READ TABLE lt_parameters TRANSPORTING NO FIELDS
@@ -192,40 +196,36 @@
           ls_kschl_mwskz-hwste  = ls_bset-hwste.
           ls_kschl_mwskz-xmlsr  = ls_map-xmlsr.
 
-          IF lv_ita IS NOT INITIAL .
-
-
-            IF sy-subrc IS INITIAL AND lv_ita IS NOT INITIAL.
-              ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg TO <fs_value>.
-              IF <fs_value> IS ASSIGNED AND <fs_value> IS INITIAL.
-                " İlk bulunan satırda alan boş — aynı anahtar içinde dolu olanı ara
-                DATA(lv_idx) = sy-tabix.
-                LOOP AT lt_bseg INTO ls_bseg FROM lv_idx.
-                  IF ls_bseg-bukrs NE ls_bset-bukrs OR
-                     ls_bseg-belnr NE ls_bset-belnr OR
-                     ls_bseg-gjahr NE ls_bset-gjahr OR
-                     ls_bseg-buzid NE 'T'              OR
-                     ls_bseg-mwskz NE ls_map-mwskz.
-                    EXIT.   " anahtar değişti, daha fazla bakma
-                  ENDIF.
-                  ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg TO <fs_value>.
-                  IF <fs_value> IS NOT INITIAL.
-                    EXIT.   " dolu değer bulundu
-                  ENDIF.
-                ENDLOOP.
-              ENDIF.
-            ENDIF.
-
-
-
-            ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg TO <fs_value>.
-            IF <fs_value> IS ASSIGNED.
-              IF <fs_value> EQ ls_map-kiril2.
-                COLLECT ls_kschl_mwskz INTO lt_kschl_mwskz.
-                CLEAR ls_kschl_mwskz.
+          IF lv_ita IS NOT INITIAL.
+            " Deterministik arama: aynı belge/buzid/mwskz grubu içinde
+            " lv_ita alanı tam olarak ls_map-kiril2'ye eşit olan satırı bul.
+            " "İlk dolu" yaklaşımı yerine "doğru değeri taşıyan" satır aranıyor;
+            " böylece 212 ve 214 aynı belgede bulunsa bile her kırılım
+            " yalnızca kendine ait satırla eşleşir.
+            DATA(lv_ita_found) = abap_false.
+            IF lv_bseg_subrc IS INITIAL.
+              LOOP AT lt_bseg INTO ls_bseg FROM lv_bseg_tabix.
+                " Belge anahtarı veya vergi kodu değişti: aramayı durdur
+                IF ls_bseg-bukrs NE ls_bset-bukrs OR
+                   ls_bseg-belnr NE ls_bset-belnr OR
+                   ls_bseg-gjahr NE ls_bset-gjahr OR
+                   ls_bseg-buzid NE 'T'            OR
+                   ls_bseg-mwskz NE ls_map-mwskz.
+                  EXIT.
+                ENDIF.
+                ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg TO <fs_value>.
+                IF <fs_value> IS ASSIGNED AND <fs_value> EQ ls_map-kiril2.
+                  lv_ita_found = abap_true.
+                  EXIT.   " doğru kırılım satırı bulundu
+                ENDIF.
                 UNASSIGN <fs_value>.
-              ENDIF.
+              ENDLOOP.
             ENDIF.
+            IF lv_ita_found = abap_true.
+              COLLECT ls_kschl_mwskz INTO lt_kschl_mwskz.
+              CLEAR ls_kschl_mwskz.
+            ENDIF.
+            UNASSIGN <fs_value>.
 
           ELSEIF lines( lt_gib ) GT 0.
 
@@ -309,8 +309,8 @@
 *              <fs_detail>-monat   = ls_bkpf-monat.
 *              <fs_detail>-buzei   = ls_bset-buzei.
 *              <fs_detail>-mwskz   = ls_bset-mwskz.
-*              <fs_detail>-kschl   = ls_bset-kschl.
-*              <fs_detail>-hkont   = ls_bset-hkont.
+*              <fs_detail>-kschl   = bset-kschl.
+*              <fs_detail>-hkont   = bset-hkont.
 *              <fs_detail>-matrah  = ls_bset-hwbas.
 *              <fs_detail>-vergi   = ls_bset-hwste.
 *              <fs_detail>-tevkt   = ls_bset-hwste.
