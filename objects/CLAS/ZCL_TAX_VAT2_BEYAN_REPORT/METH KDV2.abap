@@ -78,6 +78,22 @@
     DATA : dref_it TYPE REF TO data.
     FIELD-SYMBOLS: <t_outtab>    TYPE any.
 
+    " --- YENİ: BSET <-> BSEG-T pozisyonel eşleme için yardımcı yapılar ---
+    DATA: BEGIN OF ls_bseg_doc,
+            buzei               TYPE c LENGTH 6,
+            assignmentreference TYPE i_journalentryitem-assignmentreference,
+          END OF ls_bseg_doc.
+    DATA lt_bseg_doc LIKE TABLE OF ls_bseg_doc.
+
+    DATA: BEGIN OF ls_bset_pos,
+            buzei TYPE i_operationalacctgdoctaxitem-taxitem,
+          END OF ls_bset_pos.
+    DATA lt_bset_doc LIKE TABLE OF ls_bset_pos.
+
+    DATA lv_pos         TYPE i.
+    DATA lv_bset_buzei_c TYPE c LENGTH 6.
+    " --- /YENİ ---
+
     CLEAR me->ms_button_pushed.
     me->ms_button_pushed-kdv2 = abap_true.
 
@@ -96,18 +112,6 @@
     CLEAR ls_read_tab.
     ls_read_tab-bset = abap_true.
     ls_read_tab-bseg = abap_true.
-*    me->find_document( EXPORTING is_read_tab = ls_read_tab
-*                                 ir_mwskz    = mr_mwskz
-*                                 ir_kschl    = mr_kschl
-*                       IMPORTING et_bkpf     = lt_bkpf
-*                                 et_bset     = lt_bset
-*                                 et_bseg     = lt_bseg ).
-*    me->find_document( EXPORTING is_read_tab = ls_read_tab
-*                                 ir_mwskz    = mr_mwskz
-*                                 ir_kschl    = mr_kschl
-*                       IMPORTING et_bkpf     = mt_bkpf
-*                                 et_bset     = mt_bset
-*                                 et_bseg     = mt_bseg ).
 
     MOVE-CORRESPONDING mt_bkpf[] TO lt_bkpf[].
     MOVE-CORRESPONDING mt_bset[] TO lt_bset[].
@@ -197,13 +201,35 @@
           ls_kschl_mwskz-xmlsr  = ls_map-xmlsr.
 
           IF lv_ita IS NOT INITIAL.
-            " Deterministik arama: aynı belge/buzid/mwskz grubu içinde
-            " lv_ita alanı tam olarak ls_map-kiril2'ye eşit olan satırı bul.
-            " "İlk dolu" yaklaşımı yerine "doğru değeri taşıyan" satır aranıyor;
-            " böylece 212 ve 214 aynı belgede bulunsa bile her kırılım
-            " yalnızca kendine ait satırla eşleşir.
+            " --- YENİ MANTIK: 1:1 pozisyonel eşleştirme ---
+            " Aynı belge (bukrs/belnr/gjahr) + aynı mwskz grubu içindeki
+            " BSET satırlarını buzei'ye göre sıralı bir liste yapıyoruz,
+            " aynı şekilde BSEG-T satırlarını da buzei'ye göre sıralı
+            " bir liste yapıyoruz. ls_bset şu an kaçıncı sıradaysa,
+            " BSEG-T listesindeki AYNI sıradaki satırın
+            " AssignmentReference'ına bakıyoruz. Böylece aynı belgede
+            " birden fazla kiril2 (örn. 207/212/213 ya da 214/227)
+            " bulunsa bile her BSET satırı SADECE KENDİ karşılığı olan
+            " kiril2'ye yazılır; çapraz-bucket duplikasyon oluşmaz.
+
             DATA(lv_ita_found) = abap_false.
+
             IF lv_bseg_subrc IS INITIAL.
+
+              " --- bu belge + bu mwskz için BSET satırlarını topla ---
+              CLEAR lt_bset_doc.
+              LOOP AT lt_bset INTO DATA(ls_bset_doc) WHERE bukrs = ls_bset-bukrs
+                                                       AND belnr = ls_bset-belnr
+                                                       AND gjahr = ls_bset-gjahr
+                                                       AND mwskz = ls_map-mwskz.
+                CLEAR ls_bset_pos.
+                ls_bset_pos-buzei = ls_bset_doc-buzei.
+                APPEND ls_bset_pos TO lt_bset_doc.
+              ENDLOOP.
+              SORT lt_bset_doc BY buzei.
+
+              " --- bu belge + bu mwskz için BSEG-T satırlarını topla ---
+              CLEAR lt_bseg_doc.
               LOOP AT lt_bseg INTO ls_bseg FROM lv_bseg_tabix.
                 " Belge anahtarı veya vergi kodu değişti: aramayı durdur
                 IF ls_bseg-bukrs NE ls_bset-bukrs OR
@@ -213,19 +239,54 @@
                    ls_bseg-mwskz NE ls_map-mwskz.
                   EXIT.
                 ENDIF.
-                ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg TO <fs_value>.
+                CLEAR ls_bseg_doc.
+                ls_bseg_doc-buzei               = ls_bseg-buzei.
+                ls_bseg_doc-assignmentreference = ls_bseg-assignmentreference.
+                APPEND ls_bseg_doc TO lt_bseg_doc.
+              ENDLOOP.
+              SORT lt_bseg_doc BY buzei.
+
+              " --- ls_bset'in lt_bset_doc içindeki pozisyonunu bul ---
+              CLEAR lv_pos.
+              lv_bset_buzei_c = ls_bset-buzei.
+              LOOP AT lt_bset_doc INTO ls_bset_pos.
+                IF ls_bset_pos-buzei = ls_bset-buzei.
+                  lv_pos = sy-tabix.
+                  EXIT.
+                ENDIF.
+              ENDLOOP.
+
+              " --- aynı pozisyondaki BSEG-T satırının AssignmentReference'ı kiril2'ye eşit mi? ---
+              IF lv_pos > 0 AND lv_pos <= lines( lt_bseg_doc ).
+                READ TABLE lt_bseg_doc INTO ls_bseg_doc INDEX lv_pos.
+                IF sy-subrc = 0.
+                  ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg_doc TO <fs_value>.
+                  IF <fs_value> IS ASSIGNED AND <fs_value> EQ ls_map-kiril2.
+                    lv_ita_found = abap_true.
+                  ENDIF.
+                  UNASSIGN <fs_value>.
+                ENDIF.
+              ENDIF.
+
+              " --- Fallback: sadece TEK bir BSEG-T satırı varsa (tek kalemli belge,
+              "     örn. 224 senaryosu), pozisyon hesaplamasına gerek yok ---
+              IF lv_ita_found = abap_false AND lines( lt_bseg_doc ) = 1.
+                READ TABLE lt_bseg_doc INTO ls_bseg_doc INDEX 1.
+                ASSIGN COMPONENT lv_ita OF STRUCTURE ls_bseg_doc TO <fs_value>.
                 IF <fs_value> IS ASSIGNED AND <fs_value> EQ ls_map-kiril2.
                   lv_ita_found = abap_true.
-                  EXIT.   " doğru kırılım satırı bulundu
                 ENDIF.
                 UNASSIGN <fs_value>.
-              ENDLOOP.
+              ENDIF.
+
             ENDIF.
+
             IF lv_ita_found = abap_true.
               COLLECT ls_kschl_mwskz INTO lt_kschl_mwskz.
               CLEAR ls_kschl_mwskz.
             ENDIF.
             UNASSIGN <fs_value>.
+            " --- /YENİ MANTIK ---
 
           ELSEIF lines( lt_gib ) GT 0.
 
@@ -294,62 +355,6 @@
               CLEAR ls_kschl_mwskz.
             ENDIF.
           ENDIF.
-*          IF lv_kiril2_control EQ abap_true.
-*            APPEND INITIAL LINE TO mt_detail ASSIGNING <fs_detail>.
-*            IF <fs_detail> IS ASSIGNED  .
-*
-*              <fs_detail>-kiril1  = ls_map-kiril1.
-*              <fs_detail>-acklm1  = ls_map-acklm1.
-*              <fs_detail>-kiril2  = ls_map-kiril2.
-*              <fs_detail>-acklm2  = ls_map-acklm2.
-*              <fs_detail>-bukrs   = ls_bset-bukrs.
-*              <fs_detail>-butxt   = lv_butxt.
-*              <fs_detail>-belnr   = ls_bset-belnr.
-*              <fs_detail>-gjahr   = ls_bset-gjahr.
-*              <fs_detail>-monat   = ls_bkpf-monat.
-*              <fs_detail>-buzei   = ls_bset-buzei.
-*              <fs_detail>-mwskz   = ls_bset-mwskz.
-*              <fs_detail>-kschl   = bset-kschl.
-*              <fs_detail>-hkont   = bset-hkont.
-*              <fs_detail>-matrah  = ls_bset-hwbas.
-*              <fs_detail>-vergi   = ls_bset-hwste.
-*              <fs_detail>-tevkt   = ls_bset-hwste.
-*
-*              CLEAR ls_hesap.
-*              READ TABLE lt_hesap INTO ls_hesap WITH KEY hesaptip = '001'
-*                                                         kschl    = ls_bset-kschl
-*                                                         BINARY SEARCH.
-*
-*              IF ls_hesap-sign EQ '-'.
-*                MULTIPLY <fs_detail>-matrah BY -1.
-*              ENDIF.
-*
-*              CLEAR ls_hesap.
-*              READ TABLE lt_hesap INTO ls_hesap WITH KEY hesaptip = '004'
-*                                                         kschl    = ls_bset-kschl.
-*              IF sy-subrc IS INITIAL.
-*                IF ls_hesap-sign EQ '-'.
-*                  MULTIPLY <fs_detail>-vergi BY -1.
-*                ENDIF.
-*              ELSE.
-*                CLEAR <fs_detail>-vergi.
-*              ENDIF.
-*              CLEAR ls_hesap.
-*              READ TABLE lt_hesap INTO ls_hesap WITH KEY hesaptip = '005'
-*                                                         kschl    = ls_bset-kschl.
-*              IF sy-subrc IS INITIAL.
-*                IF ls_hesap-sign EQ '-'.
-*                  MULTIPLY <fs_detail>-tevkt BY -1.
-*                ENDIF.
-*              ELSE.
-*                CLEAR <fs_detail>-tevkt.
-*              ENDIF.
-*
-*              <fs_detail>-shkzg   = ls_bset-shkzg.
-*              <fs_detail>-zuonr   = ls_bseg-zuonr.
-*              UNASSIGN <fs_detail>.
-*            ENDIF.
-*          ENDIF.
 
         ENDLOOP.
         IF sy-subrc IS NOT INITIAL.
@@ -487,31 +492,6 @@
       COLLECT ls_collect INTO mt_collect.
       CLEAR ls_collect.
 
-
-*      APPEND INITIAL LINE TO mt_detail ASSIGNING <fs_detail>.
-*      IF <fs_detail> IS ASSIGNED.
-*        <fs_detail>-kiril1    = ls_map-kiril1.
-*        <fs_detail>-acklm1    = ls_map-acklm1.
-*        <fs_detail>-kiril2    = ls_map-kiril2.
-*        <fs_detail>-acklm2    = ls_map-acklm2.
-*        <fs_detail>-bukrs     = ls_k2mt-bukrs.
-*        <fs_detail>-butxt     = lv_butxt.
-*        <fs_detail>-belnr     = mc_new_line_belnr.
-*        <fs_detail>-gjahr     = ls_k2mt-gjahr.
-*        <fs_detail>-monat     = ls_k2mt-monat.
-*        <fs_detail>-buzei     = space.
-*        <fs_detail>-mwskz     = ls_k2mt-mwskz.
-*        <fs_detail>-kschl     = space.
-*        <fs_detail>-hkont     = space.
-*        <fs_detail>-matrah    = ls_k2mt-matrah.
-*        <fs_detail>-vergi     = ls_k2mt-vergi.
-*        <fs_detail>-tevkt     = ls_k2mt-tevkt.
-*        <fs_detail>-manuel    = ls_k2mt-manuel.
-*        <fs_detail>-vergiic   = ls_k2mt-vergiic.
-*        <fs_detail>-vergidis  = ls_k2mt-vergidis.
-*        <fs_detail>-row_color = mc_new_line_color.
-*        UNASSIGN <fs_detail>.
-*      ENDIF.
     ENDLOOP.
 
     et_collect = mt_collect.
