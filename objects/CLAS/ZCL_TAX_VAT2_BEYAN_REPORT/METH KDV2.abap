@@ -420,16 +420,23 @@
 *      ls_collect-oran = lv_conv_int.
 ************Kaldırıldı -son Çağatay - Sümeyye
 *eklendi Çağatay - Sümeyye
+      " Hesaplama Tipi 2: oran = MWVS + NLXV  (tüm non-ZTRA kbetr'ler toplanır)
+      " Hesaplama Tipi 3: tevkifato = (ZTRA / (MWVS+NLXV)) * 10
       CLEAR:  lv_conv_int ,lv_zta.
       LOOP AT lt_kschl_mwskz INTO DATA(ls_kschl_mwskz2) WHERE kiril1 = ls_k1k2-kiril1
                                                           AND kiril2 = ls_k1k2-kiril2.
         IF ls_kschl_mwskz2-kschl = 'ZTRA'.
-          lv_zta = abs( ls_kschl_mwskz2-kbetr ).
+          lv_zta = abs( ls_kschl_mwskz2-kbetr ).           " ZTRA oranı
         ELSE.
-          lv_conv_int = abs( ls_kschl_mwskz2-kbetr ).
+          lv_conv_int = lv_conv_int + abs( ls_kschl_mwskz2-kbetr ). " MWVS + NLXV toplamı
         ENDIF.
       ENDLOOP.
-      lv_zta = lv_zta / 2.
+      " (ZTRA / (MWVS+NLXV)) * 10
+      IF lv_conv_int > 0.
+        lv_zta = ( lv_zta / lv_conv_int ) * 10.
+      ELSE.
+        CLEAR lv_zta.
+      ENDIF.
       ls_collect-tevkifato = |{ lv_zta }/10|.
       ls_collect-oran = lv_conv_int.
 *eklendi-son
